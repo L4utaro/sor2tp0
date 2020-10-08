@@ -13,11 +13,17 @@ static int device_open(struct inode *, struct file *);
 static int device_release(struct inode *, struct file *);
 static ssize_t device_read(struct file *, char *, size_t, loff_t *);
 static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
+char cesar(char caracterActual, int rotaciones);
 
 #define SUCCESS 0
 #define DEVICE_NAME "chardev"   /* Nombre del dispositivo que va a aparecer en /proc/devices */
 #define BUF_LEN 80              /* Maxima longitud del mensaje ingresado para el dispositivo */
 #define CONST_N 1               /* Valor que utilizo para la encriptacion con cesar */
+#define LONGITUD_ALFABETO 26
+#define INICIO_ALFABETO_MAYUSCULAS 65
+#define INICIO_ALFABETO_MINUSCULAS 97
+const char *alfabetoMinusculas = "abcdefghijklmnopqrstuvwxyz",
+           *alfabetoMayusculas = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 /*  
 * Variables globales
 */
@@ -110,7 +116,7 @@ static ssize_t device_write(struct file *filp, const char *buff, size_t length, 
  // copy_from_user(to,from,bytes);  //traigo lo que puso el usuario (input)
   for (i = 0; i < length && i < BUF_LEN; i++){
     get_user(msg[i], buff + i);       //Guardo el mensaje en un array asi puedo operar en el
-   // msg[i] = cesar(msg[i], CONST_N);  //Aplico cesar y modifico la posición en el array
+    msg[i] = cesar(msg[i], CONST_N);  //Aplico cesar y modifico la posición en el array
   }
 
   msg[length]= '\0';
@@ -118,6 +124,18 @@ static ssize_t device_write(struct file *filp, const char *buff, size_t length, 
   printk(KERN_INFO "Dispositivo encripto el mensaje:\n");    
 
   return length;
+}
+
+char cesar(char caracterActual, int rotaciones) {
+    int posicionOriginal = caracterActual;
+    if (!isalpha(caracterActual)) {   //Si el valor ingresado no es una letra del alfabeto, se deja como esta
+      return caracterActual;
+    }
+    if (isupper(caracterActual)) {    // Dependiendo si esta en mayusculas o minisculas, utiliza el alfabeto correspondiente
+      return alfabetoMayusculas[(posicionOriginal - INICIO_ALFABETO_MAYUSCULAS + rotaciones) % LONGITUD_ALFABETO];
+    } else {
+      return alfabetoMinusculas[(posicionOriginal - INICIO_ALFABETO_MINUSCULAS + rotaciones) % LONGITUD_ALFABETO];
+    }
 }
 
 MODULE_LICENSE("GPL");
